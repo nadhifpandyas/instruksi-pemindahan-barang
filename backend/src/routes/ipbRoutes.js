@@ -1,5 +1,5 @@
 const express = require('express');
-const { createIPB, getAllIPBs, getIPBById, updateIPB } = require('../controllers/ipbController');
+const { createIPB, getAllIPBs, getIPBById, updateIPB, deleteIPB } = require('../controllers/ipbController');
 const { authenticateToken, authorizeRole } = require('../middleware/authMiddleware');
 const upload = require('../middleware/uploadMiddleware');
 
@@ -17,21 +17,22 @@ router.post('/',
 
 router.put('/:id',
     authenticateToken,
-    authorizeRole(['TEKNIS', 'ADMIN']),
+    authorizeRole(['TEKNIS', 'ADMIN', 'KEBUN']),
     upload.fields([
+        { name: 'doc_kebun', maxCount: 1 },
         { name: 'doc_teknis_1', maxCount: 1 },
         { name: 'doc_teknis_2', maxCount: 1 }
     ]),
     updateIPB
 );
 
-const { importItems, exportIPB } = require('../controllers/importController');
-
-router.post('/:id/import',
+router.delete('/:id',
     authenticateToken,
-    upload.single('file'),
-    importItems
+    authorizeRole(['ADMIN']),
+    deleteIPB
 );
+
+const { exportIPB } = require('../controllers/importController');
 
 router.get('/:id/export',
     authenticateToken,

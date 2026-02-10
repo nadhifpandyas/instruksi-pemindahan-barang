@@ -1,0 +1,11 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+async function main() {
+    const logs = await prisma.auditLog.findMany({
+        where: { action: 'DELETE_IPB' },
+        orderBy: { timestamp: 'desc' },
+        take: 5
+    });
+    console.log(JSON.stringify(logs, null, 2));
+}
+main();

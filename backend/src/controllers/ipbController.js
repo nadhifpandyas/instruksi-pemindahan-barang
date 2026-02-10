@@ -13,38 +13,18 @@ const IPB_STATUS_DETAIL = {
 
 const createIPB = async (req, res) => {
     try {
-        const { title, items } = req.body;
+        const { title, textIPB } = req.body;
         const userId = req.user.userId;
-
-        // Parse items if sent as string (multipart form-data quirk)
-        let parsedItems = [];
-        if (typeof items === 'string') {
-            try {
-                parsedItems = JSON.parse(items);
-            } catch (e) {
-                return res.status(400).json({ error: 'Invalid items format' });
-            }
-        } else {
-            parsedItems = items;
-        }
-
         const docKebunFile = req.files && req.files['doc_kebun'] ? req.files['doc_kebun'][0] : null;
 
         const ipb = await prisma.iPB.create({
             data: {
                 title,
+                textIPB,
                 createdById: userId,
                 status: 'PENDING_DOCS',
-                docKebunPath: docKebunFile ? docKebunFile.path : null,
-                items: {
-                    create: parsedItems.map(item => ({
-                        description: item.description,
-                        quantity: parseInt(item.quantity) || 0,
-                        unit: item.unit
-                    }))
-                }
-            },
-            include: { items: true }
+                docKebunPath: docKebunFile ? docKebunFile.path : null
+            }
         });
 
         await logAction(userId, 'CREATE_IPB', `Created IPB ID: ${ipb.id}`);
@@ -60,7 +40,7 @@ const getAllIPBs = async (req, res) => {
     try {
         const ipbs = await prisma.iPB.findMany({
             include: { createdBy: { select: { username: true, role: true } } },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'asc' }
         });
         res.json(ipbs);
     } catch (error) {
@@ -74,7 +54,7 @@ const getIPBById = async (req, res) => {
         const { id } = req.params;
         const ipb = await prisma.iPB.findUnique({
             where: { id: parseInt(id) },
-            include: { items: true, createdBy: { select: { username: true } } }
+            include: { createdBy: { select: { username: true } } }
         });
 
         if (!ipb) {
@@ -93,37 +73,101 @@ const updateIPB = async (req, res) => {
         const { id } = req.params;
         const { status, statusDetail, textIPB } = req.body;
         const userRole = req.user.role;
+        const userId = req.user.userId;
 
-        // File uploads
+        const { delete_doc_kebun, delete_doc_teknis_1, delete_doc_teknis_2 } = req.body;
+
+        const docKebun = req.files && req.files['doc_kebun'] ? req.files['doc_kebun'][0] : null;
         const docTeknis1 = req.files && req.files['doc_teknis_1'] ? req.files['doc_teknis_1'][0] : null;
         const docTeknis2 = req.files && req.files['doc_teknis_2'] ? req.files['doc_teknis_2'][0] : null;
 
         const updateData = {};
 
-        if (docTeknis1) updateData.docTeknis1Path = docTeknis1.path;
-        if (docTeknis2) updateData.docTeknis2Path = docTeknis2.path;
+        const deleteFile = (filePath) => {
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (e) {
+                    console.error("Error deleting file:", e);
+                }
+            }
+        };
 
-        // Admin updates
+        const currentIPB = await prisma.iPB.findUnique({ where: { id: parseInt(id) } });
+        if (!currentIPB) {
+            return res.status(404).json({ error: 'IPB not found' });
+        }
+
+        // File permissions logic
+        if (userRole === 'ADMIN') {
+            if (docKebun) {
+                if (currentIPB.docKebunPath) deleteFile(currentIPB.docKebunPath);
+                updateData.docKebunPath = docKebun.path;
+            }
+            if (delete_doc_kebun === 'true') {
+                if (currentIPB.docKebunPath) deleteFile(currentIPB.docKebunPath);
+                updateData.docKebunPath = null;
+            }
+
+            if (docTeknis1) {
+                if (currentIPB.docTeknis1Path) deleteFile(currentIPB.docTeknis1Path);
+                updateData.docTeknis1Path = docTeknis1.path;
+            }
+            if (delete_doc_teknis_1 === 'true') {
+                if (currentIPB.docTeknis1Path) deleteFile(currentIPB.docTeknis1Path);
+                updateData.docTeknis1Path = null;
+            }
+
+            if (docTeknis2) {
+                if (currentIPB.docTeknis2Path) deleteFile(currentIPB.docTeknis2Path);
+                updateData.docTeknis2Path = docTeknis2.path;
+            }
+            if (delete_doc_teknis_2 === 'true') {
+                if (currentIPB.docTeknis2Path) deleteFile(currentIPB.docTeknis2Path);
+                updateData.docTeknis2Path = null;
+            }
+        } else if (userRole === 'KEBUN') {
+            if (docKebun) {
+                if (currentIPB.docKebunPath) deleteFile(currentIPB.docKebunPath);
+                updateData.docKebunPath = docKebun.path;
+            }
+            if (delete_doc_kebun === 'true') {
+                if (currentIPB.docKebunPath) deleteFile(currentIPB.docKebunPath);
+                updateData.docKebunPath = null;
+            }
+        } else if (userRole === 'TEKNIS') {
+            if (docTeknis1) {
+                if (currentIPB.docTeknis1Path) deleteFile(currentIPB.docTeknis1Path);
+                updateData.docTeknis1Path = docTeknis1.path;
+            }
+            if (delete_doc_teknis_1 === 'true') {
+                if (currentIPB.docTeknis1Path) deleteFile(currentIPB.docTeknis1Path);
+                updateData.docTeknis1Path = null;
+            }
+
+            if (docTeknis2) {
+                if (currentIPB.docTeknis2Path) deleteFile(currentIPB.docTeknis2Path);
+                updateData.docTeknis2Path = docTeknis2.path;
+            }
+            if (delete_doc_teknis_2 === 'true') {
+                if (currentIPB.docTeknis2Path) deleteFile(currentIPB.docTeknis2Path);
+                updateData.docTeknis2Path = null;
+            }
+        }
+
+        // Admin updates status/text
         if (userRole === 'ADMIN') {
             if (status) updateData.status = status;
-            if (statusDetail) {
-                if (!Object.values(IPB_STATUS_DETAIL).includes(statusDetail)) {
-                    // Allow matching keys too if needed, but requirements say values.
-                    // We trust admin sends correct string or we validate strictly?
-                    // Let's allow raw string if it matches requirements.
-                }
-                updateData.statusDetail = statusDetail;
-            }
-            if (textIPB) updateData.textIPB = textIPB;
+            if (statusDetail !== undefined) updateData.statusDetail = statusDetail;
+            if (textIPB !== undefined) updateData.textIPB = textIPB;
         }
 
         const ipb = await prisma.iPB.update({
             where: { id: parseInt(id) },
-            data: updateData,
-            include: { items: true }
+            data: updateData
         });
 
-        await logAction(req.user.userId, 'UPDATE_IPB', `Updated IPB ID: ${id}. Changes: ${Object.keys(updateData).join(', ')}`);
+        await logAction(userId, 'UPDATE_IPB', `Updated IPB ID: ${id}. Changes: ${Object.keys(updateData).join(', ')}`);
 
         res.json(ipb);
     } catch (error) {
@@ -132,4 +176,40 @@ const updateIPB = async (req, res) => {
     }
 };
 
-module.exports = { createIPB, getAllIPBs, getIPBById, updateIPB };
+const deleteIPB = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.userId;
+
+        const ipb = await prisma.iPB.findUnique({ where: { id: parseInt(id) } });
+        if (!ipb) {
+            return res.status(404).json({ error: 'IPB not found' });
+        }
+
+        const deleteFile = (filePath) => {
+            if (filePath && fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (e) {
+                    console.error("Error deleting file during IPB deletion:", e);
+                }
+            }
+        };
+
+        // Cleanup files
+        deleteFile(ipb.docKebunPath);
+        deleteFile(ipb.docTeknis1Path);
+        deleteFile(ipb.docTeknis2Path);
+
+        await prisma.iPB.delete({ where: { id: parseInt(id) } });
+
+        await logAction(userId, 'DELETE_IPB', `Deleted IPB ID: ${id}`);
+
+        res.json({ message: 'IPB deleted successfully' });
+    } catch (error) {
+        console.error('Delete IPB error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+module.exports = { createIPB, getAllIPBs, getIPBById, updateIPB, deleteIPB };

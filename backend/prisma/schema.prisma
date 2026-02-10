@@ -37,17 +37,9 @@ model IPB {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  items          IPBItem[]
 }
 
-model IPBItem {
-  id          Int    @id @default(autoincrement())
-  ipbId       Int
-  ipb         IPB    @relation(fields: [ipbId], references: [id])
-  description String
-  quantity    Int
-  unit        String?
-}
+
 
 model AuditLog {
   id        Int      @id @default(autoincrement())

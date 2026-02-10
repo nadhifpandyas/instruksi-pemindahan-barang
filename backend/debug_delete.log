@@ -1,0 +1,36 @@
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:24:55.557Z
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:24:59.723Z
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:25:07.036Z
+Attempting to delete IPB 2 by user 1 at 2026-02-10T14:25:13.471Z
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:25:54.280Z
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:27:19.699Z
+Error deleting IPB: PrismaClientKnownRequestError: 
+Invalid `prisma.iPB.delete()` invocation in
+D:\website-pemindahan-barang\backend\src\controllers\ipbController.js:210:32
+
+  207 deleteFile(ipb.docTeknis2Path);
+  208 
+  209 console.log(`Backend: Deleting IPB ${id} from database...`);
+→ 210 await prisma.iPB.delete(
+Foreign key constraint violated: `foreign key`
+    at $n.handleRequestError (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async deleteIPB (D:\website-pemindahan-barang\backend\src\controllers\ipbController.js:210:9)
+Attempting to delete IPB 1 by user 1 at 2026-02-10T14:28:11.009Z
+Error deleting IPB: PrismaClientKnownRequestError: 
+Invalid `prisma.iPB.delete()` invocation in
+D:\website-pemindahan-barang\backend\src\controllers\ipbController.js:210:32
+
+  207 deleteFile(ipb.docTeknis2Path);
+  208 
+  209 console.log(`Backend: Deleting IPB ${id} from database...`);
+→ 210 await prisma.iPB.delete(
+Foreign key constraint violated: `foreign key`
+    at $n.handleRequestError (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:7315)
+    at $n.handleAndLogRequestError (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:6623)
+    at $n.request (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:121:6307)
+    at async l (D:\website-pemindahan-barang\backend\node_modules\@prisma\client\runtime\library.js:130:9633)
+    at async deleteIPB (D:\website-pemindahan-barang\backend\src\controllers\ipbController.js:210:9)
+Attempting to delete IPB 3 by user 1 at 2026-02-10T14:28:15.081Z

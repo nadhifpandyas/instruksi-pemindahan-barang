@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Download, Upload, Save, FileText, ArrowLeft } from 'lucide-react';
+import { Download, Upload, Save, FileText, ArrowLeft, Trash } from 'lucide-react';
 
 const DetailIPB = () => {
     const { id } = useParams();
@@ -15,11 +15,16 @@ const DetailIPB = () => {
     const [status, setStatus] = useState('');
     const [statusDetail, setStatusDetail] = useState('');
     const [textIPB, setTextIPB] = useState('');
+    const [docKebun, setDocKebun] = useState(null);
     const [docTeknis1, setDocTeknis1] = useState(null);
     const [docTeknis2, setDocTeknis2] = useState(null);
 
-    // Import State
-    const [importFile, setImportFile] = useState(null);
+    const [deleteKebun, setDeleteKebun] = useState(false);
+    const [deleteTeknis1, setDeleteTeknis1] = useState(false);
+    const [deleteTeknis2, setDeleteTeknis2] = useState(false);
+
+    // Import State - REMOVED
+
 
     useEffect(() => {
         fetchIPB();
@@ -40,71 +45,47 @@ const DetailIPB = () => {
         }
     };
 
+
     const handleUpdate = async (e) => {
         e.preventDefault();
         const formData = new FormData();
         if (status) formData.append('status', status);
-        if (statusDetail) formData.append('statusDetail', statusDetail);
-        if (textIPB) formData.append('textIPB', textIPB);
+        if (statusDetail !== undefined) formData.append('statusDetail', statusDetail);
+        if (textIPB !== undefined) formData.append('textIPB', textIPB);
+
+        if (docKebun) formData.append('doc_kebun', docKebun);
         if (docTeknis1) formData.append('doc_teknis_1', docTeknis1);
         if (docTeknis2) formData.append('doc_teknis_2', docTeknis2);
+
+        if (deleteKebun) formData.append('delete_doc_kebun', 'true');
+        if (deleteTeknis1) formData.append('delete_doc_teknis_1', 'true');
+        if (deleteTeknis2) formData.append('delete_doc_teknis_2', 'true');
 
         try {
             await axios.put(`http://localhost:5000/api/ipbs/${id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            alert('IPB Updated successfully');
+            alert('IPB berhasil diperbarui');
+            setDocKebun(null);
+            setDocTeknis1(null);
+            setDocTeknis2(null);
+            setDeleteKebun(false);
+            setDeleteTeknis1(false);
+            setDeleteTeknis2(false);
             fetchIPB();
         } catch (error) {
             console.error('Update error:', error);
-            alert('Failed to update IPB');
+            alert('Gagal memperbarui IPB');
         }
     };
 
-    const handleImport = async () => {
-        if (!importFile) return;
-        const formData = new FormData();
-        formData.append('file', importFile);
-        try {
-            await axios.post(`http://localhost:5000/api/ipbs/${id}/import`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            alert('Items imported successfully');
-            fetchIPB();
-            setImportFile(null);
-        } catch (error) {
-            console.error('Import error:', error);
-            alert('Import failed');
-        }
-    };
 
-    const handleExport = () => {
-        window.open(`http://localhost:5000/api/ipbs/${id}/export?token=${localStorage.getItem('token')}`, '_blank');
-        // Note: Token in URL is not best practice, usually verified by cookie or handled via blob download in frontend.
-        // For simplicity, assuming middleware allows or we use axios blob.
-    };
 
-    const downloadExport = async () => {
-        try {
-            const response = await axios.get(`http://localhost:5000/api/ipbs/${id}/export`, {
-                responseType: 'blob',
-            });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `IPB-${id}.xlsx`);
-            document.body.appendChild(link);
-            link.click();
-        } catch (error) {
-            console.error('Export error:', error);
-            alert('Export failed');
-        }
-    };
+    if (loading) return <div className="p-8">Memuat...</div>;
+    if (!ipb) return <div className="p-8">IPB tidak ditemukan</div>;
 
-    if (loading) return <div className="p-8">Loading...</div>;
-    if (!ipb) return <div className="p-8">IPB not found</div>;
-
-    const isTeknisOrAdmin = ['TEKNIS', 'ADMIN'].includes(user?.role);
+    const isTeknis = user?.role === 'TEKNIS';
+    const isKebun = user?.role === 'KEBUN';
     const isAdmin = user?.role === 'ADMIN';
 
     return (
@@ -112,106 +93,113 @@ const DetailIPB = () => {
             <div className="max-w-6xl mx-auto bg-white rounded shadow p-6">
                 <button
                     onClick={() => navigate('/')}
-                    className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                    className="mb-6 flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors font-medium text-sm"
                 >
-                    <ArrowLeft size={20} /> Kembali ke Dashboard
+                    <ArrowLeft size={18} /> Kembali ke Dashboard
                 </button>
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-800 mb-2">{ipb.title} (#{ipb.id})</h1>
                         <p className="text-gray-600">Status: <span className="font-semibold">{ipb.status}</span></p>
-                        <p className="text-gray-600">Created By: {ipb.createdBy?.username}</p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={downloadExport} className="bg-green-600 text-white px-3 py-2 rounded flex items-center gap-2 hover:bg-green-700">
-                            <Download size={18} /> Export Excel
-                        </button>
+                        <p className="text-gray-600">Dibuat Oleh: {ipb.createdBy?.username}</p>
                     </div>
                 </div>
 
-                {/* Items Section */}
-                <div className="mb-8">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-semibold border-b pb-2">Items</h2>
-                        <div className="flex gap-2 items-center">
-                            <input
-                                type="file"
-                                accept=".xlsx, .xls"
-                                className="text-sm"
-                                onChange={(e) => setImportFile(e.target.files[0])}
-                            />
-                            <button
-                                onClick={handleImport}
-                                disabled={!importFile}
-                                className="bg-blue-600 text-white px-3 py-1 rounded text-sm disabled:bg-blue-300"
-                            >
-                                Import Excel
-                            </button>
-                        </div>
-                    </div>
-                    <table className="min-w-full border">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="p-2 border">Description</th>
-                                <th className="p-2 border">Qty</th>
-                                <th className="p-2 border">Unit</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {ipb.items.map((item) => (
-                                <tr key={item.id}>
-                                    <td className="p-2 border">{item.description}</td>
-                                    <td className="p-2 border">{item.quantity}</td>
-                                    <td className="p-2 border">{item.unit}</td>
-                                </tr>
-                            ))}
-                            {ipb.items.length === 0 && <tr><td colSpan="3" className="p-4 text-center">No items</td></tr>}
-                        </tbody>
-                    </table>
-                </div>
+
 
                 {/* Documents & Inputs */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div>
-                        <h2 className="text-xl font-semibold border-b pb-2 mb-4">Documents</h2>
+                        <h2 className="text-xl font-semibold border-b pb-2 mb-4">Dokumen</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Dokumen Kebun</label>
-                                {ipb.docKebunPath ? (
-                                    <a href={`http://localhost:5000/${ipb.docKebunPath}`} target="_blank" rel="noreferrer" className="text-blue-600 flex items-center gap-1">
-                                        <FileText size={16} /> View PDF
-                                    </a>
-                                ) : <span className="text-gray-400">Not uploaded</span>}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Dokumen Teknis 1</label>
-                                {ipb.docTeknis1Path ? (
-                                    <a href={`http://localhost:5000/${ipb.docTeknis1Path}`} target="_blank" rel="noreferrer" className="text-blue-600 flex items-center gap-1">
-                                        <FileText size={16} /> View PDF
-                                    </a>
-                                ) : <span className="text-gray-400">Not uploaded</span>}
-                                {isTeknisOrAdmin && (
-                                    <input type="file" accept="application/pdf" className="mt-1 block w-full text-sm" onChange={(e) => setDocTeknis1(e.target.files[0])} />
+                                {ipb.docKebunPath && !deleteKebun ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <a href={`http://localhost:5000/${ipb.docKebunPath}`} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                            <FileText size={16} /> Lihat PDF
+                                        </a>
+                                        {(isKebun || isAdmin) && (
+                                            <button onClick={() => setDeleteKebun(true)} className="bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                                <Trash size={16} /> Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="mt-1 mb-2">
+                                        {deleteKebun ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-red-500 italic text-sm">Akan dihapus</span>
+                                                <button onClick={() => setDeleteKebun(false)} className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs hover:bg-gray-300 transition-colors">Batal Hapus</button>
+                                            </div>
+                                        ) : <span className="text-gray-400 italic text-sm">Belum diunggah</span>}
+                                    </div>
+                                )}
+                                {(isKebun || isAdmin) && (
+                                    <input type="file" accept="application/pdf" className="mt-2 block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onChange={(e) => setDocKebun(e.target.files[0])} />
                                 )}
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Dokumen Teknis 2</label>
-                                {ipb.docTeknis2Path ? (
-                                    <a href={`http://localhost:5000/${ipb.docTeknis2Path}`} target="_blank" rel="noreferrer" className="text-blue-600 flex items-center gap-1">
-                                        <FileText size={16} /> View PDF
-                                    </a>
-                                ) : <span className="text-gray-400">Not uploaded</span>}
-                                {isTeknisOrAdmin && (
-                                    <input type="file" accept="application/pdf" className="mt-1 block w-full text-sm" onChange={(e) => setDocTeknis2(e.target.files[0])} />
+                                <label className="block text-sm font-medium text-gray-700">Dokumen dari Bagian Teknis ke 4OPH</label>
+                                {ipb.docTeknis1Path && !deleteTeknis1 ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <a href={`http://localhost:5000/${ipb.docTeknis1Path}`} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                            <FileText size={16} /> Lihat PDF
+                                        </a>
+                                        {(isTeknis || isAdmin) && (
+                                            <button onClick={() => setDeleteTeknis1(true)} className="bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                                <Trash size={16} /> Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="mt-1 mb-2">
+                                        {deleteTeknis1 ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-red-500 italic text-sm">Akan dihapus</span>
+                                                <button onClick={() => setDeleteTeknis1(false)} className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs hover:bg-gray-300 transition-colors">Batal Hapus</button>
+                                            </div>
+                                        ) : <span className="text-gray-400 italic text-sm">Belum diunggah</span>}
+                                    </div>
+                                )}
+                                {(isTeknis || isAdmin) && (
+                                    <input type="file" accept="application/pdf" className="mt-2 block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onChange={(e) => setDocTeknis1(e.target.files[0])} />
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Dokumen dari Bagian Teknis ke 4AKN</label>
+                                {ipb.docTeknis2Path && !deleteTeknis2 ? (
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <a href={`http://localhost:5000/${ipb.docTeknis2Path}`} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                            <FileText size={16} /> Lihat PDF
+                                        </a>
+                                        {(isTeknis || isAdmin) && (
+                                            <button onClick={() => setDeleteTeknis2(true)} className="bg-red-100 text-red-700 px-3 py-2 rounded-md hover:bg-red-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                                <Trash size={16} /> Hapus
+                                            </button>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="mt-1 mb-2">
+                                        {deleteTeknis2 ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-red-500 italic text-sm">Akan dihapus</span>
+                                                <button onClick={() => setDeleteTeknis2(false)} className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs hover:bg-gray-300 transition-colors">Batal Hapus</button>
+                                            </div>
+                                        ) : <span className="text-gray-400 italic text-sm">Belum diunggah</span>}
+                                    </div>
+                                )}
+                                {(isTeknis || isAdmin) && (
+                                    <input type="file" accept="application/pdf" className="mt-2 block w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" onChange={(e) => setDocTeknis2(e.target.files[0])} />
                                 )}
                             </div>
                         </div>
                     </div>
 
                     <div>
-                        <h2 className="text-xl font-semibold border-b pb-2 mb-4">Admin / Details</h2>
+                        <h2 className="text-xl font-semibold border-b pb-2 mb-4">Admin / Detail</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Status</label>
@@ -228,7 +216,7 @@ const DetailIPB = () => {
                                         <option value="APPROVED">APPROVED</option>
                                         <option value="DONE">DONE</option>
                                     </select>
-                                ) : <span className="p-2 block">{status}</span>}
+                                ) : <span className="p-2 block font-medium">{status}</span>}
                             </div>
 
                             <div>
@@ -239,7 +227,7 @@ const DetailIPB = () => {
                                         value={statusDetail}
                                         onChange={(e) => setStatusDetail(e.target.value)}
                                     >
-                                        <option value="">- Select -</option>
+                                        <option value="">- Pilih -</option>
                                         <option value="Dokumen belum lengkap">Dokumen belum lengkap</option>
                                         <option value="Dokumen belum lengkap + No material barang belum ada">Dokumen belum lengkap + No material barang belum ada</option>
                                         <option value="SUDAH_TERBIT IPB (DONE)">SUDAH_TERBIT IPB (DONE)</option>
@@ -259,12 +247,12 @@ const DetailIPB = () => {
                                 ) : <p className="p-2 border rounded bg-gray-50 whitespace-pre-wrap">{textIPB || '-'}</p>}
                             </div>
 
-                            {(isAdmin || isTeknisOrAdmin) && (
+                            {(isAdmin || isTeknis || isKebun) && (
                                 <button
                                     onClick={handleUpdate}
-                                    className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 flex items-center justify-center gap-2"
+                                    className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-semibold shadow-sm transition-colors"
                                 >
-                                    <Save size={18} /> Update IPB
+                                    <Save size={18} /> Perbarui IPB
                                 </button>
                             )}
                         </div>
@@ -273,6 +261,7 @@ const DetailIPB = () => {
             </div>
         </div>
     );
+
 };
 
 export default DetailIPB;
