@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdIPBs IPB[]     @relation("CreatedBy")
+  auditLogs   AuditLog[]
+}
+
+model IPB {
+  id             Int             @id @default(autoincrement())
+  title          String
+  status         String          @default("DRAFT")
+  statusDetail   String?
+
+  docKebunPath   String?
+  docTeknis1Path String?
+  docTeknis2Path String?
+
+  textIPB         String?
+
+  createdById    Int
+  createdBy      User      @relation("CreatedBy", fields: [createdById], references: [id])
+
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  items          IPBItem[]
+}
+
+model IPBItem {
+  id          Int    @id @default(autoincrement())
+  ipbId       Int
+  ipb         IPB    @relation(fields: [ipbId], references: [id])
+  description String
+  quantity    Int
+  unit        String?
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  details   String?
+  timestamp DateTime @default(now())
+}
