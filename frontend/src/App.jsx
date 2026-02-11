@@ -19,7 +19,7 @@ const App = () => {
             <Route path="/ipb/:id" element={<DetailIPB />} />
           </Route>
 
-          <Route element={<ProtectedRoute allowedRoles={['KEBUN', 'ADMIN']} />}>
+          <Route element={<ProtectedRoute allowedRoles={['KEBUN', 'TEKNIS', 'ADMIN']} />}>
             <Route path="/create" element={<CreateIPB />} />
           </Route>
 

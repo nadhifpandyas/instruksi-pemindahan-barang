@@ -8,22 +8,74 @@ const prisma = new PrismaClient();
 const IPB_STATUS_DETAIL = {
     BELUM_LENGKAP: 'Dokumen belum lengkap',
     BELUM_LENGKAP_NO_MATERIAL: 'Dokumen belum lengkap + No material barang belum ada',
-    SUDAH_TERBIT: 'SUDAH_TERBIT IPB (DONE)'
+    SUDAH_TERBIT: 'SUDAH_TERBIT IPB (DONE)',
+    LENGKAP: 'Dokumen sudah lengkap',
+    KOSONG: 'Dokumen kosong'
+};
+
+const determineStatusDetail = (ipb) => {
+    // Check specific documents for "Menunggu Approval" logic
+    const hasDocKebun = !!ipb.docKebunPath;
+    const hasDocTeknis1 = !!ipb.docTeknis1Path;
+    const hasDocTeknis2 = !!ipb.docTeknis2Path;
+    const hasDocIPB = !!ipb.docIPBPath;
+
+    if (hasDocIPB) return 'Dokumen sudah lengkap';
+
+    // If all 3 prerequisites are present but no IPB doc -> Menunggu Approval
+    if (hasDocKebun && hasDocTeknis1 && hasDocTeknis2 && !hasDocIPB) {
+        return 'Menunggu Approval';
+    }
+
+    const docs = [ipb.docKebunPath, ipb.docTeknis1Path, ipb.docTeknis2Path, ipb.docIPBPath];
+    const uploadedCount = docs.filter(doc => doc !== null && doc !== undefined).length;
+
+    if (uploadedCount === 0) return 'Dokumen kosong';
+
+    // Fallback for 1 or 2 docs
+    return 'Dokumen belum lengkap';
 };
 
 const createIPB = async (req, res) => {
     try {
-        const { title, textIPB } = req.body;
+        if (req.user.role !== 'KEBUN' && req.user.role !== 'TEKNIS') {
+            return res.status(403).json({ error: 'Only KEBUN and TEKNIS role can create IPB' });
+        }
+
+        const { title } = req.body;
         const userId = req.user.userId;
-        const docKebunFile = req.files && req.files['doc_kebun'] ? req.files['doc_kebun'][0] : null;
+
+        let docPath = null;
+        let docKebunPath = null;
+        let docTeknis1Path = null;
+        let docTeknis2Path = null;
+
+        if (req.user.role === 'KEBUN') {
+            const file = req.files && req.files['doc_kebun'] ? req.files['doc_kebun'][0] : null;
+            if (file) docKebunPath = file.path;
+            docPath = file;
+        } else if (req.user.role === 'TEKNIS') {
+            const file1 = req.files && req.files['doc_teknis_1'] ? req.files['doc_teknis_1'][0] : null;
+            const file2 = req.files && req.files['doc_teknis_2'] ? req.files['doc_teknis_2'][0] : null;
+
+            if (file1) docTeknis1Path = file1.path;
+            if (file2) docTeknis2Path = file2.path;
+
+            docPath = file1 || file2;
+        }
+
+        const initialStatusDetail = docPath ? 'Dokumen belum lengkap' : 'Dokumen kosong';
 
         const ipb = await prisma.iPB.create({
             data: {
                 title,
-                textIPB,
                 createdById: userId,
                 status: 'PENDING_DOCS',
-                docKebunPath: docKebunFile ? docKebunFile.path : null
+                statusDetail: initialStatusDetail,
+                statusDetail: initialStatusDetail,
+                docKebunPath: docKebunPath,
+                docTeknis1Path: docTeknis1Path,
+                docTeknis2Path: docTeknis2Path
             }
         });
 
@@ -155,17 +207,39 @@ const updateIPB = async (req, res) => {
             }
         }
 
-        // Admin updates status/text
+        // Admin updates status/text/docIPB/Title
         if (userRole === 'ADMIN') {
             if (status) updateData.status = status;
             if (statusDetail !== undefined) updateData.statusDetail = statusDetail;
-            if (textIPB !== undefined) updateData.textIPB = textIPB;
+            if (req.body.title) updateData.title = req.body.title; // Allow Admin to edit title
+
+            const docIPB = req.files && req.files['doc_ipb'] ? req.files['doc_ipb'][0] : null;
+            if (docIPB) {
+                if (currentIPB.docIPBPath) deleteFile(currentIPB.docIPBPath);
+                updateData.docIPBPath = docIPB.path;
+            }
+            if (req.body.delete_doc_ipb === 'true') {
+                if (currentIPB.docIPBPath) deleteFile(currentIPB.docIPBPath);
+                updateData.docIPBPath = null;
+            }
         }
 
         const ipb = await prisma.iPB.update({
             where: { id: parseInt(id) },
             data: updateData
         });
+
+        // Recalculate status detail based on updated IPB
+        const updatedIPB = await prisma.iPB.findUnique({ where: { id: parseInt(id) } });
+        const newStatusDetail = determineStatusDetail(updatedIPB);
+
+        // Update again if status changed
+        if (updatedIPB.statusDetail !== newStatusDetail) {
+            await prisma.iPB.update({
+                where: { id: parseInt(id) },
+                data: { statusDetail: newStatusDetail }
+            });
+        }
 
         await logAction(userId, 'UPDATE_IPB', `Updated IPB ID: ${id}. Changes: ${Object.keys(updateData).join(', ')}`);
 
@@ -200,6 +274,7 @@ const deleteIPB = async (req, res) => {
         deleteFile(ipb.docKebunPath);
         deleteFile(ipb.docTeknis1Path);
         deleteFile(ipb.docTeknis2Path);
+        deleteFile(ipb.docIPBPath);
 
         await prisma.iPB.delete({ where: { id: parseInt(id) } });
 

@@ -8,44 +8,36 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  username  String   @unique
-  password  String
-  role      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  createdIPBs IPB[]     @relation("CreatedBy")
+  id          Int        @id @default(autoincrement())
+  username    String     @unique
+  password    String
+  role        String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
   auditLogs   AuditLog[]
+  createdIPBs IPB[]      @relation("CreatedBy")
 }
 
 model IPB {
-  id             Int             @id @default(autoincrement())
+  id             Int      @id @default(autoincrement())
   title          String
-  status         String          @default("DRAFT")
+  status         String   @default("DRAFT")
   statusDetail   String?
-
   docKebunPath   String?
   docTeknis1Path String?
   docTeknis2Path String?
-
-  textIPB         String?
-
+  docIPBPath     String?
   createdById    Int
-  createdBy      User      @relation("CreatedBy", fields: [createdById], references: [id])
-
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  createdBy      User     @relation("CreatedBy", fields: [createdById], references: [id])
 }
-
-
 
 model AuditLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   action    String
   details   String?
   timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }

@@ -10,8 +10,12 @@ router.get('/:id', authenticateToken, getIPBById);
 
 router.post('/',
     authenticateToken,
-    authorizeRole(['KEBUN', 'ADMIN']),
-    upload.fields([{ name: 'doc_kebun', maxCount: 1 }]),
+    authorizeRole(['KEBUN', 'TEKNIS']),
+    upload.fields([
+        { name: 'doc_kebun', maxCount: 1 },
+        { name: 'doc_teknis_1', maxCount: 1 },
+        { name: 'doc_teknis_2', maxCount: 1 }
+    ]),
     createIPB
 );
 
@@ -21,7 +25,8 @@ router.put('/:id',
     upload.fields([
         { name: 'doc_kebun', maxCount: 1 },
         { name: 'doc_teknis_1', maxCount: 1 },
-        { name: 'doc_teknis_2', maxCount: 1 }
+        { name: 'doc_teknis_2', maxCount: 1 },
+        { name: 'doc_ipb', maxCount: 1 }
     ]),
     updateIPB
 );
