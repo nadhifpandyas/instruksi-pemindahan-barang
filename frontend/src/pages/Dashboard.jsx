@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api, { API_URL } from '../api/axios';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Plus, FileText, Trash } from 'lucide-react';
@@ -19,7 +19,7 @@ const Dashboard = () => {
 
     const fetchIpbs = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/ipbs');
+            const res = await api.get('/api/ipbs');
             setIpbs(res.data);
         } catch (error) {
             console.error('Error fetching IPBs:', error);
@@ -30,7 +30,7 @@ const Dashboard = () => {
         if (!window.confirm('Apakah Anda yakin ingin menghapus IPB ini? Semua dokumen terkait juga akan dihapus.')) return;
 
         try {
-            await axios.delete(`http://localhost:5000/api/ipbs/${id}`);
+            await api.delete(`/api/ipbs/${id}`);
             alert('IPB berhasil dihapus');
             fetchIpbs();
         } catch (error) {
@@ -160,7 +160,7 @@ const Dashboard = () => {
                                         {[ipb.docKebunPath, ipb.docTeknis1Path, ipb.docTeknis2Path, ipb.docIPBPath].map((path, idx) => (
                                             <td key={idx} className="py-4 px-6 text-center">
                                                 {path ? (
-                                                    <a href={`http://localhost:5000/${path}`} target="_blank" rel="noreferrer"
+                                                    <a href={`${API_URL}/${path}`} target="_blank" rel="noreferrer"
                                                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-sky-50 text-sky-700 border border-sky-100 hover:bg-sky-100 hover:border-sky-200 transition-all text-xs font-medium truncate max-w-[140px]"
                                                         title={path.split('-').slice(1).join('-')}>
                                                         <FileText size={14} className="flex-shrink-0" />
