@@ -5,10 +5,12 @@
     "scripts": {
         "start": "node src/app.js",
         "dev": "nodemon src/app.js",
+        "vercel-build": "prisma generate",
         "test": "echo \"Error: no test specified\" && exit 1"
     },
     "dependencies": {
         "@prisma/client": "^5.10.2",
+        "@supabase/supabase-js": "^2.95.3",
         "bcryptjs": "^2.4.3",
         "cors": "^2.8.5",
         "dotenv": "^16.4.5",
