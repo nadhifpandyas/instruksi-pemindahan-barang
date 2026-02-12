@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api, { API_URL } from '../api/axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Download, Upload, Save, FileText, ArrowLeft, Trash } from 'lucide-react';
@@ -34,7 +34,7 @@ const DetailIPB = () => {
 
     const fetchIPB = async () => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/ipbs/${id}`);
+            const res = await api.get(`/api/ipbs/${id}`);
             const data = res.data;
             setIpb(data);
             setTitle(data.title);
@@ -66,7 +66,7 @@ const DetailIPB = () => {
         if (deleteDocIPB) formData.append('delete_doc_ipb', 'true');
 
         try {
-            await axios.put(`http://localhost:5000/api/ipbs/${id}`, formData, {
+            await api.put(`/api/ipbs/${id}`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             alert('IPB berhasil diperbarui');
@@ -132,7 +132,7 @@ const DetailIPB = () => {
                                     <label className="block text-sm font-medium text-gray-700">Dokumen Kebun</label>
                                     {ipb.docKebunPath && !deleteKebun ? (
                                         <div className="flex items-center gap-2 mt-1">
-                                            <a href={`http://localhost:5000/${ipb.docKebunPath}`} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 flex items-center gap-2 text-sm font-medium transition-colors">
+                                            <a href={`${API_URL}/${ipb.docKebunPath}`} target="_blank" rel="noreferrer" className="bg-blue-100 text-blue-700 px-3 py-2 rounded-md hover:bg-blue-200 flex items-center gap-2 text-sm font-medium transition-colors">
                                                 <FileText size={16} /> Lihat PDF
                                             </a>
                                             {(isKebun || isAdmin) && (

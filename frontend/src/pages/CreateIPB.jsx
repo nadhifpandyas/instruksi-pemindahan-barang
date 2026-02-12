@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash, FileText, UploadCloud, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +32,7 @@ const CreateIPB = () => {
         }
 
         try {
-            await axios.post('http://localhost:5000/api/ipbs', formData, {
+            await api.post('/api/ipbs', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             navigate('/');
@@ -80,8 +80,8 @@ const CreateIPB = () => {
             <label className="block text-slate-700 text-xs font-bold mb-2 ml-1 uppercase tracking-wider">{label}</label>
             <div
                 className={`relative border-2 border-dashed rounded-xl p-4 transition-all duration-300 flex flex-col items-center justify-center cursor-pointer group h-[140px] ${selectedFile
-                        ? 'border-emerald-500 bg-emerald-50/30'
-                        : 'border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50/10'
+                    ? 'border-emerald-500 bg-emerald-50/30'
+                    : 'border-slate-300 bg-slate-50 hover:border-emerald-400 hover:bg-emerald-50/10'
                     }`}
                 onClick={() => !selectedFile && document.getElementById(`file-input-${id}`).click()}
                 onDragOver={handleDragOver}
