@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/ipbs', ipbRoutes);
-app.use('/uploads', express.static('uploads')); // Serve uploaded files
+// app.use('/uploads', express.static('uploads')); // Serve uploaded files (DISABLED FOR VERCEL)
 
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
